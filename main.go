@@ -1,14 +1,15 @@
 package main
 
 import (
-	"bccp-runner/endpoint"
-	"bccp-runner/job"
-	"bccp-server/runners"
 	"encoding/gob"
 	"flag"
 	"log"
 	"net"
 	"sync"
+
+	"github.com/bccp-runner/endpoint"
+	"github.com/bccp-runner/job"
+	"github.com/bccp-server/runners"
 )
 
 var currentJob *job.Job

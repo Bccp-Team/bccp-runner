@@ -2,7 +2,6 @@ package job
 
 import (
 	"bufio"
-	"bccp-runner/endpoint"
 	"io"
 	"io/ioutil"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/bccp-runner/endpoint"
 )
 
 type Job struct {

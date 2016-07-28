@@ -1,9 +1,10 @@
 package endpoint
 
 import (
-	"bccp-server/runners"
 	"encoding/gob"
 	"time"
+
+	"github.com/bccp-server/runners"
 )
 
 type ApiWrapper struct {
