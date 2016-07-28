@@ -8,7 +8,7 @@ import (
 )
 
 type ApiWrapper struct {
-	jobId         uint
+	jobId         int
 	messageBuffer chan (string)
 	finished      bool
 	messages      []string
@@ -17,7 +17,7 @@ type ApiWrapper struct {
 	encoder       *gob.Encoder
 }
 
-func NewApiWrapper(id uint, pushTimer uint, encoder *gob.Encoder) *ApiWrapper {
+func NewApiWrapper(id int, pushTimer uint, encoder *gob.Encoder) *ApiWrapper {
 	var api ApiWrapper
 
 	api.jobId = id
@@ -25,6 +25,7 @@ func NewApiWrapper(id uint, pushTimer uint, encoder *gob.Encoder) *ApiWrapper {
 	api.messages = make([]string, 0, 10)
 	api.finished = false
 	api.pushTimer = pushTimer
+	api.encoder = encoder
 
 	return &api
 }

@@ -87,7 +87,7 @@ func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
 func main() {
 	var serverToken string
 	var serverIp string
-	flag.StringVar(&serverToken, "runner-token", "bccp", "the runner token")
+	flag.StringVar(&serverToken, "runner-token", "bccp_token", "the runner token")
 	flag.StringVar(&serverIp, "runner-service", "127.0.0.1:4243", "the runner service")
 
 	flag.Parse()
