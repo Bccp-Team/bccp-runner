@@ -14,6 +14,7 @@ import (
 )
 
 type Job struct {
+	status  string
 	repo    string
 	name    string
 	init    string
@@ -24,6 +25,7 @@ type Job struct {
 
 func NewJob(repo, name, init string, timeout uint, api *endpoint.ApiWrapper) *Job {
 	var job Job
+	job.status = "failed"
 	job.repo = repo
 	job.name = name
 	job.init = init
@@ -32,7 +34,8 @@ func NewJob(repo, name, init string, timeout uint, api *endpoint.ApiWrapper) *Jo
 	return &job
 }
 
-func (job *Job) Kill() (err error) {
+func (job *Job) Kill(reason string) (err error) {
+	job.status = reason
 	err = job.cmd.Process.Signal(syscall.SIGTERM)
 	return
 }
@@ -42,7 +45,7 @@ func (job *Job) Run() {
 
 	if err != nil {
 		job.api.AppendOutput(out)
-		job.api.Finish(1)
+		job.api.Finish("failed")
 		return
 	}
 
@@ -50,7 +53,7 @@ func (job *Job) Run() {
 
 	if err != nil {
 		job.api.AppendOutput(err.Error())
-		job.api.Finish(1)
+		job.api.Finish("failed")
 		return
 	}
 
@@ -86,7 +89,7 @@ func (job *Job) exec() (err error) {
 
 	if err != nil {
 		job.api.AppendOutput("(error) " + err.Error())
-		job.api.Finish(1)
+		job.api.Finish("failed")
 		return
 	}
 
@@ -94,7 +97,7 @@ func (job *Job) exec() (err error) {
 
 	if err != nil {
 		job.api.AppendOutput("(error) " + err.Error())
-		job.api.Finish(1)
+		job.api.Finish("failed")
 		return
 	}
 
@@ -102,7 +105,7 @@ func (job *Job) exec() (err error) {
 
 	if err != nil {
 		job.api.AppendOutput("(error) " + err.Error())
-		job.api.Finish(1)
+		job.api.Finish("failed")
 		return
 	}
 
@@ -126,7 +129,7 @@ func (job *Job) exec() (err error) {
 	go func() {
 		select {
 		case <-timer.C:
-			job.Kill()
+			job.Kill("timeout")
 		case <-finished:
 		}
 	}()
@@ -137,10 +140,10 @@ func (job *Job) exec() (err error) {
 	wg.Wait()
 
 	if err == nil {
-		job.api.Finish(0)
+		job.api.Finish("finished")
 	} else { //FIXME: find a way to retreive errorcode as integer
 		job.api.AppendOutput("(error) " + err.Error())
-		job.api.Finish(1)
+		job.api.Finish(job.status)
 	}
 
 	return

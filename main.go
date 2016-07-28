@@ -28,7 +28,7 @@ func kill(encoder *gob.Encoder) {
 		return
 	}
 
-	err := currentJob.Kill()
+	err := currentJob.Kill("canceled")
 
 	if err == nil {
 		answer.Kind = runners.Error

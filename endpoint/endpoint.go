@@ -12,7 +12,7 @@ type ApiWrapper struct {
 	messageBuffer chan (string)
 	finished      bool
 	messages      []string
-	errorcode     int
+	status        string
 	pushTimer     uint
 	encoder       *gob.Encoder
 }
@@ -23,7 +23,6 @@ func NewApiWrapper(id uint, pushTimer uint, encoder *gob.Encoder) *ApiWrapper {
 	api.jobId = id
 	api.messageBuffer = make(chan string)
 	api.messages = make([]string, 0, 10)
-	api.errorcode = 0
 	api.finished = false
 	api.pushTimer = pushTimer
 
@@ -34,8 +33,8 @@ func (api *ApiWrapper) AppendOutput(message string) {
 	api.messageBuffer <- message
 }
 
-func (api *ApiWrapper) Finish(errorcode int) {
-	api.errorcode = errorcode
+func (api *ApiWrapper) Finish(status string) {
+	api.status = status
 	api.finished = true
 }
 
@@ -80,6 +79,6 @@ func (api *ApiWrapper) pushResult(messages []string) {
 }
 
 func (api *ApiWrapper) pushExitCode() {
-	request := &runners.ClientRequest{Kind: runners.Finish, ReturnValue: api.errorcode, JobId: api.jobId}
+	request := &runners.ClientRequest{Kind: runners.Finish, Status: api.status, JobId: api.jobId}
 	api.encoder.Encode(request)
 }
