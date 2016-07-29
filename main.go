@@ -13,24 +13,33 @@ import (
 )
 
 //FIXME refactor
-var currentJob *job.Job
-var jobId int
-var mut sync.Mutex
+
+type jobWrapper struct {
+	currentJob *job.Job
+	jobId      int
+	mut        sync.Mutex
+}
+
+var (
+	globatmut sync.Mutex
+	jobs      map[int]*jobWrapper
+)
 
 func kill(encoder *gob.Encoder, id int) {
-	mut.Lock()
-	defer mut.Unlock()
+	globatmut.Lock()
+	defer globatmut.Unlock()
 
+	j, ok := jobs[id]
 	answer := runners.ClientRequest{}
 
-	if currentJob == nil || jobId == id {
+	if !ok {
 		answer.Kind = runners.Error
 		answer.Message = "No job to kill"
 		encoder.Encode(&answer)
 		return
 	}
 
-	err := currentJob.Kill("canceled")
+	err := j.currentJob.Kill("canceled")
 
 	if err == nil {
 		answer.Kind = runners.Error
@@ -46,13 +55,15 @@ func ping(encoder *gob.Encoder) {
 }
 
 func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
-	mut.Lock()
-	defer mut.Unlock()
+
+	globatmut.Lock()
+	defer globatmut.Unlock()
 
 	answer := runners.ClientRequest{}
+	_, ok := jobs[servReq.JobId]
 
-	if currentJob != nil {
-		answer.Message = "A job is already running"
+	if ok {
+		answer.Message = "The job is already running"
 		answer.Kind = runners.Error
 		encoder.Encode(&answer)
 		return
@@ -67,9 +78,13 @@ func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
 		return
 	}
 
+	j := &jobWrapper{}
+
 	api := endpoint.NewApiWrapper(servReq.JobId, runReq.UpdateTime, encoder)
-	currentJob = job.NewJob(runReq.Repo, runReq.Name, runReq.Init, runReq.Timeout, api)
-	jobId = servReq.JobId
+	j.currentJob = job.NewJob(runReq.Repo, runReq.Name, runReq.Init, runReq.Timeout, api)
+	j.jobId = servReq.JobId
+
+	jobs[servReq.JobId] = j
 
 	go func() {
 		var wg sync.WaitGroup
@@ -80,18 +95,22 @@ func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
 			api.Push()
 		}()
 
-		currentJob.Run()
+		j.currentJob.Run()
 		wg.Wait()
 
-		currentJob = nil
+		globatmut.Lock()
+		defer globatmut.Unlock()
+		delete(jobs, j.jobId)
 	}()
 }
 
 func main() {
 	var serverToken string
 	var serverIp string
+	var concurrency int
 	flag.StringVar(&serverToken, "runner-token", "bccp_token", "the runner token")
 	flag.StringVar(&serverIp, "runner-service", "127.0.0.1:4243", "the runner service")
+	flag.IntVar(&concurrency, "runner-concurrency", 7, "the runner capacity")
 
 	flag.Parse()
 	conn, err := net.Dial("tcp", serverIp)
@@ -103,7 +122,9 @@ func main() {
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
 
-	request := runners.SubscribeRequest{Token: serverToken}
+	jobs = make(map[int]*jobWrapper)
+
+	request := runners.SubscribeRequest{Token: serverToken, Concurrency: concurrency}
 	answer := runners.SubscribeAnswer{}
 
 	err = encoder.Encode(&request)
