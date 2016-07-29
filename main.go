@@ -12,16 +12,18 @@ import (
 	"github.com/bccp-server/runners"
 )
 
+//FIXME refactor
 var currentJob *job.Job
+var jobId int
 var mut sync.Mutex
 
-func kill(encoder *gob.Encoder) {
+func kill(encoder *gob.Encoder, id int) {
 	mut.Lock()
 	defer mut.Unlock()
 
 	answer := runners.ClientRequest{}
 
-	if currentJob == nil {
+	if currentJob == nil || jobId == id {
 		answer.Kind = runners.Error
 		answer.Message = "No job to kill"
 		encoder.Encode(&answer)
@@ -65,8 +67,9 @@ func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
 		return
 	}
 
-	api := endpoint.NewApiWrapper(runReq.JobId, runReq.UpdateTime, encoder)
+	api := endpoint.NewApiWrapper(servReq.JobId, runReq.UpdateTime, encoder)
 	currentJob = job.NewJob(runReq.Repo, runReq.Name, runReq.Init, runReq.Timeout, api)
+	jobId = servReq.JobId
 
 	go func() {
 		var wg sync.WaitGroup
@@ -125,7 +128,7 @@ func main() {
 		case runners.Ping:
 			ping(encoder)
 		case runners.Kill:
-			kill(encoder)
+			kill(encoder, servReq.JobId)
 		case runners.Run:
 			run(&servReq, encoder)
 		}
