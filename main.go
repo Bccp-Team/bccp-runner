@@ -118,6 +118,8 @@ func main() {
 		log.Panic(err)
 	}
 
+	log.Printf("connected to server")
+
 	for {
 		servReq := runners.ServerRequest{}
 		err = decoder.Decode(&servReq)
@@ -126,10 +128,13 @@ func main() {
 		}
 		switch servReq.Kind {
 		case runners.Ping:
+			log.Printf("ping request")
 			ping(encoder)
 		case runners.Kill:
+			log.Printf("kill request")
 			kill(encoder, servReq.JobId)
 		case runners.Run:
+			log.Printf("run request")
 			run(&servReq, encoder)
 		}
 	}

@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"encoding/gob"
+	"log"
 	"time"
 
 	"github.com/bccp-server/runners"
@@ -76,10 +77,12 @@ func (api *ApiWrapper) Push() {
 
 func (api *ApiWrapper) pushResult(messages []string) {
 	request := &runners.ClientRequest{Logs: messages, Kind: runners.Logs, JobId: api.jobId}
+	log.Printf("push result")
 	api.encoder.Encode(request)
 }
 
 func (api *ApiWrapper) pushExitCode() {
+	log.Printf("finish")
 	request := &runners.ClientRequest{Kind: runners.Finish, Status: api.status, JobId: api.jobId}
 	api.encoder.Encode(request)
 }
