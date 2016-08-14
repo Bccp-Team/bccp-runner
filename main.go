@@ -9,7 +9,7 @@ import (
 
 	"github.com/bccp-runner/endpoint"
 	"github.com/bccp-runner/job"
-	"github.com/bccp-server/runners"
+	"github.com/bccp-server/message"
 )
 
 //FIXME refactor
@@ -30,10 +30,10 @@ func kill(encoder *gob.Encoder, id int) {
 	defer globatmut.Unlock()
 
 	j, ok := jobs[id]
-	answer := runners.ClientRequest{}
+	answer := message.ClientRequest{}
 
 	if !ok {
-		answer.Kind = runners.Error
+		answer.Kind = message.Error
 		answer.Message = "No job to kill"
 		encoder.Encode(&answer)
 		return
@@ -42,7 +42,7 @@ func kill(encoder *gob.Encoder, id int) {
 	err := j.currentJob.Kill("canceled")
 
 	if err == nil {
-		answer.Kind = runners.Error
+		answer.Kind = message.Error
 		answer.Message = err.Error()
 		encoder.Encode(&answer)
 		return
@@ -50,21 +50,21 @@ func kill(encoder *gob.Encoder, id int) {
 }
 
 func ping(encoder *gob.Encoder) {
-	answer := runners.ClientRequest{Kind: runners.Ack}
+	answer := message.ClientRequest{Kind: message.Ack}
 	go encoder.Encode(&answer)
 }
 
-func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
+func run(servReq *message.ServerRequest, encoder *gob.Encoder) {
 
 	globatmut.Lock()
 	defer globatmut.Unlock()
 
-	answer := runners.ClientRequest{}
+	answer := message.ClientRequest{}
 	_, ok := jobs[servReq.JobId]
 
 	if ok {
 		answer.Message = "The job is already running"
-		answer.Kind = runners.Error
+		answer.Kind = message.Error
 		encoder.Encode(&answer)
 		return
 	}
@@ -73,7 +73,7 @@ func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
 
 	if runReq == nil || runReq.Init == "" || runReq.Repo == "" || runReq.Name == "" || runReq.UpdateTime == 0 || runReq.Timeout == 0 {
 		answer.Message = "Missing some parameters"
-		answer.Kind = runners.Error
+		answer.Kind = message.Error
 		encoder.Encode(&answer)
 		return
 	}
@@ -105,9 +105,11 @@ func run(servReq *runners.ServerRequest, encoder *gob.Encoder) {
 }
 
 func main() {
+	var runnerName string
 	var serverToken string
 	var serverIp string
 	var concurrency int
+	flag.StringVar(&runnerName, "runner-name", "bccp runner", "the runner token")
 	flag.StringVar(&serverToken, "runner-token", "bccp_token", "the runner token")
 	flag.StringVar(&serverIp, "runner-service", "127.0.0.1:4243", "the runner service")
 	flag.IntVar(&concurrency, "runner-concurrency", 7, "the runner capacity")
@@ -124,8 +126,8 @@ func main() {
 
 	jobs = make(map[int]*jobWrapper)
 
-	request := runners.SubscribeRequest{Token: serverToken, Concurrency: concurrency}
-	answer := runners.SubscribeAnswer{}
+	request := message.SubscribeRequest{Token: serverToken, Concurrency: concurrency, Name: runnerName}
+	answer := message.SubscribeAnswer{}
 
 	err = encoder.Encode(&request)
 
@@ -142,19 +144,19 @@ func main() {
 	log.Printf("connected to server")
 
 	for {
-		servReq := runners.ServerRequest{}
+		servReq := message.ServerRequest{}
 		err = decoder.Decode(&servReq)
 		if err != nil {
 			log.Panic(err)
 		}
 		switch servReq.Kind {
-		case runners.Ping:
+		case message.Ping:
 			log.Printf("ping request")
 			ping(encoder)
-		case runners.Kill:
+		case message.Kill:
 			log.Printf("kill request")
 			kill(encoder, servReq.JobId)
-		case runners.Run:
+		case message.Run:
 			log.Printf("run request")
 			run(&servReq, encoder)
 		}

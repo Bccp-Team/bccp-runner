@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/bccp-server/runners"
+	"github.com/bccp-server/message"
 )
 
 type ApiWrapper struct {
@@ -76,13 +76,13 @@ func (api *ApiWrapper) Push() {
 }
 
 func (api *ApiWrapper) pushResult(messages []string) {
-	request := &runners.ClientRequest{Logs: messages, Kind: runners.Logs, JobId: api.jobId}
+	request := &message.ClientRequest{Logs: messages, Kind: message.Logs, JobId: api.jobId}
 	log.Printf("push result")
 	api.encoder.Encode(request)
 }
 
 func (api *ApiWrapper) pushExitCode() {
 	log.Printf("finish")
-	request := &runners.ClientRequest{Kind: runners.Finish, Status: api.status, JobId: api.jobId}
+	request := &message.ClientRequest{Kind: message.Finish, Status: api.status, JobId: api.jobId}
 	api.encoder.Encode(request)
 }
