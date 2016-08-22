@@ -7,9 +7,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/bccp-runner/endpoint"
-	"github.com/bccp-runner/job"
-	"github.com/bccp-server/message"
+	"github.com/Bccp-Team/bccp-runner/endpoint"
+	"github.com/Bccp-Team/bccp-runner/job"
+	"github.com/Bccp-Team/bccp-server/message"
 )
 
 //FIXME refactor
