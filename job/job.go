@@ -19,30 +19,30 @@ type Job struct {
 	name    string
 	init    string
 	timeout uint
-	api     *endpoint.ApiWrapper
+	api     *endpoint.APIWrapper
 	cmd     *exec.Cmd
 }
 
-func NewJob(repo, name, init string, timeout uint, api *endpoint.ApiWrapper) *Job {
-	var job Job
-	job.status = "failed"
-	job.repo = repo
-	job.name = name
-	job.init = init
-	job.timeout = timeout
-	job.api = api
+func NewJob(repo, name, init string, timeout uint, api *endpoint.APIWrapper) *Job {
+	job := Job{
+		status:  "failed",
+		repo:    repo,
+		name:    name,
+		init:    init,
+		timeout: timeout,
+		api:     api,
+	}
+
 	return &job
 }
 
-func (job *Job) Kill(reason string) (err error) {
+func (job *Job) Kill(reason string) error {
 	job.status = reason
-	err = job.cmd.Process.Signal(syscall.SIGTERM)
-	return
+	return job.cmd.Process.Signal(syscall.SIGTERM)
 }
 
 func (job *Job) Run() {
 	out, err := job.clonerepo()
-
 	if err != nil {
 		job.api.AppendOutput(out)
 		job.api.Finish("failed")
@@ -50,7 +50,6 @@ func (job *Job) Run() {
 	}
 
 	err = ioutil.WriteFile(job.name+"/init.sh", []byte(job.init), 0644)
-
 	if err != nil {
 		job.api.AppendOutput(err.Error())
 		job.api.Finish("failed")
@@ -61,7 +60,6 @@ func (job *Job) Run() {
 }
 
 func (job *Job) clonerepo() (out string, err error) {
-
 	if _, err = os.Stat(job.name); err == nil {
 		err = os.RemoveAll(job.name)
 		if err != nil {
@@ -71,10 +69,11 @@ func (job *Job) clonerepo() (out string, err error) {
 	}
 
 	rawoutput, err := exec.Command("git", "clone", job.repo, job.name).CombinedOutput()
-
 	if err != nil {
 		out = err.Error() + ":" + string(rawoutput)
+		return
 	}
+
 	return
 }
 
@@ -86,7 +85,6 @@ func (job *Job) exec() (err error) {
 	var pipes [2]io.ReadCloser
 	kind := [2]string{"out", "err"}
 	pipes[0], err = cmd.StdoutPipe()
-
 	if err != nil {
 		job.api.AppendOutput("(error) " + err.Error())
 		job.api.Finish("failed")
@@ -94,7 +92,6 @@ func (job *Job) exec() (err error) {
 	}
 
 	pipes[1], err = cmd.StderrPipe()
-
 	if err != nil {
 		job.api.AppendOutput("(error) " + err.Error())
 		job.api.Finish("failed")
@@ -102,7 +99,6 @@ func (job *Job) exec() (err error) {
 	}
 
 	err = cmd.Start()
-
 	if err != nil {
 		job.api.AppendOutput("(error) " + err.Error())
 		job.api.Finish("failed")
@@ -141,7 +137,8 @@ func (job *Job) exec() (err error) {
 
 	if err == nil {
 		job.api.Finish("finished")
-	} else { //FIXME: find a way to retreive errorcode as integer
+	} else {
+		//FIXME: find a way to retreive errorcode as integer
 		job.api.AppendOutput("(error) " + err.Error())
 		job.api.Finish(job.status)
 	}
