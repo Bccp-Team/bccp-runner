@@ -8,8 +8,8 @@ import (
 	"github.com/Bccp-Team/bccp-server/message"
 )
 
-type ApiWrapper struct {
-	jobId         int
+type APIWrapper struct {
+	jobID         int
 	messageBuffer chan (string)
 	finished      bool
 	messages      []string
@@ -18,10 +18,10 @@ type ApiWrapper struct {
 	encoder       *gob.Encoder
 }
 
-func NewApiWrapper(id int, pushTimer uint, encoder *gob.Encoder) *ApiWrapper {
-	var api ApiWrapper
+func NewAPIWrapper(id int, pushTimer uint, encoder *gob.Encoder) *APIWrapper {
+	var api APIWrapper
 
-	api.jobId = id
+	api.jobID = id
 	api.messageBuffer = make(chan string)
 	api.messages = make([]string, 0, 10)
 	api.finished = false
@@ -31,16 +31,16 @@ func NewApiWrapper(id int, pushTimer uint, encoder *gob.Encoder) *ApiWrapper {
 	return &api
 }
 
-func (api *ApiWrapper) AppendOutput(message string) {
+func (api *APIWrapper) AppendOutput(message string) {
 	api.messageBuffer <- message
 }
 
-func (api *ApiWrapper) Finish(status string) {
+func (api *APIWrapper) Finish(status string) {
 	api.status = status
 	api.finished = true
 }
 
-func (api *ApiWrapper) Push() {
+func (api *APIWrapper) Push() {
 	tick := time.Tick(time.Second * time.Duration(api.pushTimer))
 
 	for !api.finished {
@@ -75,14 +75,14 @@ func (api *ApiWrapper) Push() {
 	api.pushExitCode()
 }
 
-func (api *ApiWrapper) pushResult(messages []string) {
-	request := &message.ClientRequest{Logs: messages, Kind: message.Logs, JobId: api.jobId}
+func (api *APIWrapper) pushResult(messages []string) {
+	request := &message.ClientRequest{Logs: messages, Kind: message.Logs, JobID: api.jobID}
 	log.Printf("push result")
 	api.encoder.Encode(request)
 }
 
-func (api *ApiWrapper) pushExitCode() {
+func (api *APIWrapper) pushExitCode() {
 	log.Printf("finish")
-	request := &message.ClientRequest{Kind: message.Finish, Status: api.status, JobId: api.jobId}
+	request := &message.ClientRequest{Kind: message.Finish, Status: api.status, JobID: api.jobID}
 	api.encoder.Encode(request)
 }
