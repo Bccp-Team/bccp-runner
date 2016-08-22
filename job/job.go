@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bccp-runner/endpoint"
+	"github.com/Bccp-Team/bccp-runner/endpoint"
 )
 
 type Job struct {

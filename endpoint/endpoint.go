@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/bccp-server/message"
+	"github.com/Bccp-Team/bccp-server/message"
 )
 
 type ApiWrapper struct {
