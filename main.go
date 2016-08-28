@@ -32,18 +32,20 @@ func kill(encoder *gob.Encoder, id int) {
 	answer := message.ClientRequest{}
 
 	j, ok := jobs[id]
-	if !ok {
+	if !ok || j == nil {
 		answer.Kind = message.Error
 		answer.Message = "No job to kill"
 		encoder.Encode(&answer)
 		return
 	}
 
-	if j == nil || j.currentJob == nil {
+	current := j.currentJob
+
+	if current == nil {
 		return
 	}
 
-	err := j.currentJob.Kill("canceled")
+	err := current.Kill("canceled")
 	if err != nil {
 		answer.Kind = message.Error
 		answer.Message = err.Error()
