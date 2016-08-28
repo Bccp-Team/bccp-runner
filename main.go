@@ -39,6 +39,10 @@ func kill(encoder *gob.Encoder, id int) {
 		return
 	}
 
+	if j == nil || j.currentJob == nil {
+		return
+	}
+
 	err := j.currentJob.Kill("canceled")
 	if err != nil {
 		answer.Kind = message.Error
