@@ -18,12 +18,12 @@ type Job struct {
 	repo    string
 	name    string
 	init    string
-	timeout uint
+	timeout uint64
 	api     *endpoint.APIWrapper
 	cmd     *exec.Cmd
 }
 
-func NewJob(repo, name, init string, timeout uint, api *endpoint.APIWrapper) *Job {
+func NewJob(repo, name, init string, timeout uint64, api *endpoint.APIWrapper) *Job {
 	job := Job{
 		status:  "failed",
 		repo:    repo,

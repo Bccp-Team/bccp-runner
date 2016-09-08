@@ -16,16 +16,16 @@ import (
 
 type jobWrapper struct {
 	currentJob *job.Job
-	jobID      int
+	jobID      int64
 	mut        sync.Mutex
 }
 
 var (
 	globalMut sync.Mutex
-	jobs      map[int]*jobWrapper
+	jobs      map[int64]*jobWrapper
 )
 
-func kill(encoder *gob.Encoder, id int) {
+func kill(encoder *gob.Encoder, id int64) {
 	globalMut.Lock()
 	defer globalMut.Unlock()
 
@@ -112,13 +112,13 @@ func main() {
 		runnerName  string
 		serverToken string
 		serverIP    string
-		concurrency int
+		concurrency int64
 	)
 
 	flag.StringVar(&runnerName, "runner-name", "bccp runner", "the runner token")
 	flag.StringVar(&serverToken, "runner-token", "bccp_token", "the runner token")
 	flag.StringVar(&serverIP, "runner-service", "127.0.0.1:4243", "the runner service")
-	flag.IntVar(&concurrency, "runner-concurrency", 7, "the runner capacity")
+	flag.Int64Var(&concurrency, "runner-concurrency", 7, "the runner capacity")
 	flag.Parse()
 
 	conn, err := net.Dial("tcp", serverIP)
@@ -129,7 +129,7 @@ func main() {
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
 
-	jobs = make(map[int]*jobWrapper)
+	jobs = make(map[int64]*jobWrapper)
 
 	request := message.SubscribeRequest{Token: serverToken, Concurrency: concurrency, Name: runnerName}
 	answer := message.SubscribeAnswer{}

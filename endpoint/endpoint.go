@@ -9,22 +9,20 @@ import (
 )
 
 type APIWrapper struct {
-	jobID         int
+	jobID         int64
 	messageBuffer chan (string)
-	finished      bool
 	messages      []string
 	status        string
-	pushTimer     uint
+	pushTimer     uint64
 	encoder       *gob.Encoder
 }
 
-func NewAPIWrapper(id int, pushTimer uint, encoder *gob.Encoder) *APIWrapper {
+func NewAPIWrapper(id int64, pushTimer uint64, encoder *gob.Encoder) *APIWrapper {
 	var api APIWrapper
 
 	api.jobID = id
 	api.messageBuffer = make(chan string)
 	api.messages = make([]string, 0, 10)
-	api.finished = false
 	api.pushTimer = pushTimer
 	api.encoder = encoder
 
@@ -37,16 +35,23 @@ func (api *APIWrapper) AppendOutput(message string) {
 
 func (api *APIWrapper) Finish(status string) {
 	api.status = status
-	api.finished = true
+	close(api.messageBuffer)
 }
 
 func (api *APIWrapper) Push() {
 	tick := time.Tick(time.Second * time.Duration(api.pushTimer))
 
-	for !api.finished {
+	loop := true
+
+	for loop {
 		select {
-		case message := <-api.messageBuffer:
-			api.messages = append(api.messages, message)
+		case message, ok := <-api.messageBuffer:
+			if !ok {
+				log.Printf("close buffer")
+				loop = false
+			} else {
+				api.messages = append(api.messages, message)
+			}
 		case <-tick:
 			if len(api.messages) > 0 {
 				oldmessages := api.messages
@@ -56,22 +61,10 @@ func (api *APIWrapper) Push() {
 		}
 	}
 
-	//FIXME this code is maybe useless
-
-	remaining := true
-
-	for remaining {
-		select {
-		case message := <-api.messageBuffer:
-			api.messages = append(api.messages, message)
-		default:
-			remaining = false
-		}
-	}
-
 	if len(api.messages) > 0 {
 		api.pushResult(api.messages)
 	}
+
 	api.pushExitCode()
 }
 
