@@ -70,7 +70,7 @@ func (api *APIWrapper) Push() {
 
 func (api *APIWrapper) pushResult(messages []string) {
 	request := &message.ClientRequest{Logs: messages, Kind: message.Logs, JobID: api.jobID}
-	log.Printf("push result")
+	log.Printf("push result (%v)", api.jobID)
 	api.encoder.Encode(request)
 }
 

@@ -38,7 +38,19 @@ func NewJob(repo, name, init string, timeout uint64, api *endpoint.APIWrapper) *
 
 func (job *Job) Kill(reason string) error {
 	job.status = reason
-	return job.cmd.Process.Signal(syscall.SIGHUP)
+	cmd := job.cmd
+
+	if cmd == nil {
+		return nil
+	}
+
+	process := cmd.Process
+
+	if process == nil {
+		return nil
+	}
+
+	return process.Signal(syscall.SIGHUP)
 }
 
 func (job *Job) Run() {
