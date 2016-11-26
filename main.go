@@ -4,6 +4,10 @@ import (
 	"encoding/gob"
 	"flag"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"net"
 	"sync"
 
@@ -115,6 +119,8 @@ func main() {
 		concurrency int64
 	)
 
+	sigs := make(chan os.Signal, 1)
+
 	flag.StringVar(&runnerName, "runner-name", "bccp runner", "the runner token")
 	flag.StringVar(&serverToken, "runner-token", "bccp_token", "the runner token")
 	flag.StringVar(&serverIP, "runner-service", "127.0.0.1:4243", "the runner service")
@@ -125,6 +131,14 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		conn.Close()
+		os.Exit(0)
+	}()
 
 	encoder := gob.NewEncoder(conn)
 	decoder := gob.NewDecoder(conn)
