@@ -40,6 +40,7 @@ func (api *APIWrapper) Finish(status string) {
 
 func (api *APIWrapper) Push() {
 	tick := time.Tick(time.Second * time.Duration(api.pushTimer))
+	alive := time.Tick(time.Minute)
 
 	loop := true
 
@@ -57,7 +58,10 @@ func (api *APIWrapper) Push() {
 				oldmessages := api.messages
 				api.messages = make([]string, 0, 10)
 				api.pushResult(oldmessages) //go this method ?
+				alive = time.Tick(time.Minute)
 			}
+		case <-alive:
+			api.pushResult(nil)
 		}
 	}
 
