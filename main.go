@@ -25,7 +25,7 @@ type jobWrapper struct {
 }
 
 var (
-	globalMut sync.Mutex
+	globalMut sync.RWMutex
 	jobs      map[int64]*jobWrapper
 )
 
@@ -35,7 +35,9 @@ func kill(encoder *gob.Encoder, id int64) {
 
 	answer := message.ClientRequest{}
 
+	globalMut.RLock()
 	j, ok := jobs[id]
+	globalMut.RUnlock()
 	if !ok || j == nil {
 		answer.Kind = message.Error
 		answer.Message = "No job to kill"
